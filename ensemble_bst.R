@@ -13,8 +13,10 @@ bst.ensem	= function( d, test.bt, cv.group, ind_col, dep_cols
   col.csr	= 1
   for( i in 1:num.groups )
   {
-    t	= gbm( y ~ ., data=d[cv.group != i&cv.group>0,c(ind_col,dep_cols)]
+    if( length( table( y ) ) == 2 ) t = gbm( y ~ ., data=d[cv.group != i&cv.group>0,c(ind_col,dep_cols)]
 	, n.trees = max(tree.vec), verbose=F )
+    if( length( table( y ) ) > 2 ) t = gbm( y ~ ., data=d[cv.group != i&cv.group>0,c(ind_col,dep_cols)]
+	, n.trees = max(tree.vec), verbose=F, distribution = "gaussian" )
     for( k in tree.vec )
     {
       ensem.bst[test.bt==0 & cv.group==i,col.csr] = 
@@ -49,8 +51,10 @@ bst.ensem.opt = function( d, test.bt, cv.group, ind_col, dep_cols
   library( gbm )
   for( i in 1:num.groups )
   {
-    t	= gbm( y ~ ., data=d[cv.group != i&cv.group>0,c(ind_col,dep_cols)]
-	, n.trees = max.trees, verbose=F, cv.folds=cv.fold)
+    if( length( table( y ) ) == 2 ) t = gbm( y ~ ., data=d[cv.group != i&cv.group>0,c(ind_col,dep_cols)]
+	, n.trees = max(tree.vec), verbose=F, cv.folds=cv.fold )
+    if( length( table( y ) ) > 2 ) t = gbm( y ~ ., data=d[cv.group != i&cv.group>0,c(ind_col,dep_cols)]
+	, n.trees = max(tree.vec), verbose=F, distribution = "gaussian", cv.folds=cv.fold )
     opt.tree	= which.min( t$cv.error )
     print( paste( "For cv.group",i,"using",opt.tree,"trees." ) )
     ensem.bst[test.bt==0 & cv.group==i,1] = 

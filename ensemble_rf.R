@@ -1,7 +1,7 @@
 rf.ensem = function( d, test.bt, cv.group, ind_col, dep_cols
       ,tree.vec = 2^(1:13)
       #Controls how many variables are sampled for each split:
-      ,try.vec = floor( sqrt( ncol( d ) ) )
+      ,try.vec = floor( sqrt( length( dep_cols ) ) )
       ,type	= "Classification"	# "Regression"
       ,name = ""
       )

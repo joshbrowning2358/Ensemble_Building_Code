@@ -48,8 +48,8 @@ rf.ensem = function( d, test.bt, cv.group, ind_col, dep_cols
         if( name!="") colnames(ensem.rf)[col.csr] = paste(colnames(ensem.rf)[col.csr],"_",name,sep="")
         print( paste( "This analysis is ", round(100*(i+(which(tree.vec==k)-1)*num.groups+num.groups*length(tree.vec)*(which(try.vec==j)-1))/(length(try.vec)*length(tree.vec)*num.groups)),"% complete",sep="" ) )
       }
-      if( name=="" ) write.csv( file="ensem_rf.csv", ensem.rf )
-      if( name!="" ) write.csv( file=paste("ensem_rf_",name,".csv",sep=""), ensem.rf )
+      if( name=="" ) write.csv( file=paste("ensem_rf",proc.time()[[3]],".csv",sep="") , ensem.rf, row.names=F )
+      if( name!="" ) write.csv( file=paste("ensem_rf_",name,proc.time()[[3]]".csv",sep=""), ensem.rf, row.names=F )
       col.csr = col.csr + 1
     }
   }

@@ -75,7 +75,7 @@ kknn.ensem	= function( d, test.bt, cv.group, ind_col, dep_cols
               kknn.test$fitted.values/num.groups
             colnames( ensem.kknn )[col.csr] = paste( "kknn_neigh", k, "_comp",j,"_dist",l,sep="")
           }
-          write.csv( file=paste("ensem_kknn_",kernel,proc.time[[3]],".csv", sep=""), ensem.kknn, row.names=F )
+          write.csv( file=paste("ensem_kknn_",kernel,proc.time()[[3]],".csv", sep=""), ensem.kknn, row.names=F )
           print( paste( "This analysis is ", round(100*(i+(which(neigh.vec==k)-1)*num.groups+num.groups*length(neigh.vec)*(which(comp.vec==j)-1)+num.groups*length(neigh.vec)*length(comp.vec)*(which(dist.vec==l)-1))/(length(dist.vec)*length(neigh.vec)*length(comp.vec)*num.groups)),"% complete",sep="" ) )
         }
         if( type=="Classification" ) col.csr = col.csr + 2

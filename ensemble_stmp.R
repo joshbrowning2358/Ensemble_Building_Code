@@ -40,8 +40,8 @@ stmp.ensem	= function( d, test.bt, cv.group, ind_col, dep_cols
       print( paste( "This analysis is ", round(100*(which(tree.vec==j)+(i-1)*length(tree.vec))/(length(tree.vec)*num.groups)),"% complete",sep="" ) )
     }
   }
-  if( name=="" ) write.csv( file="ensem_stmp.csv", ensem.stmp )
-  if( name!="" ) write.csv( file=paste("ensem_stmp_",name,".csv",sep=""), ensem.stmp )
+  if( name=="" ) write.csv( file=paste("ensem_stmp_",proc.time()[[3]],".csv",sep=""), ensem.stmp, row.names=F )
+  if( name!="" ) write.csv( file=paste("ensem_stmp_",name,,proc.time()[[3]]".csv",sep=""), ensem.stmp, row.names=F )
   return( ensem.stmp )
 }
 

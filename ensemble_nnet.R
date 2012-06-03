@@ -42,8 +42,8 @@ nn.ensem	= function( d, test.bt, cv.group, ind_col, dep_cols
         if( name!="") colnames(ensem.nn)[col.csr] = paste(colnames(ensem.nn)[col.csr],"_",name,sep="")
 	  col.csr	= col.csr - 1
         print( paste( "This analysis is ", round(100*(i+(which(size.vec==j)-1)*num.groups+(which(maxit.vec==k)-1)*num.groups*length(size.vec))/(length(maxit.vec)*length(size.vec)*num.groups),1),"% complete",sep="" ) )
-        if( name=="" ) write.csv( file="ensem_nn.csv", ensem.nn )
-        if( name!="" ) write.csv( file=paste("ensem_nn_",name,".csv",sep=""), ensem.nn )
+        if( name=="" ) write.csv( file=paste("ensem_nn_",proc.time()[[3]],.csv",sep=""), ensem.nn, row.names=F )
+        if( name!="" ) write.csv( file=paste("ensem_nn_",name,proc.time()[[3]]".csv",sep=""), ensem.nn, row.names=F )
       }
       col.csr	= col.csr + 2
     }

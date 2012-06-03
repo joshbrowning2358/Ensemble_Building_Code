@@ -28,8 +28,8 @@ tree.ensem	= function( d, test.bt, cv.group, ind_col, dep_cols
         if( name!="") colnames(ensem.tree)[col.csr] = paste(colnames(ensem.tree)[col.csr],"_",name,sep="")
         print( paste( "This analysis is ",round(100*(i+num.groups*(which(cp.vec==k)-1)+(which(buc.vec==j)-1)*length(cp.vec)*num.groups)/(num.groups*length(buc.vec)*length(cp.vec) ), 1 ), "% complete", sep="" ) )
       }
-      if( name=="" ) write.csv( file="ensem_tree.csv", ensem.tree )
-      if( name!="" ) write.csv( file=paste("ensem_tree_",name,".csv",sep=""), ensem.tree )
+      if( name=="" ) write.csv( file=paste("ensem_tree_",proc.time()[[3]],".csv",sep=""), ensem.tree, row.names=F )
+      if( name!="" ) write.csv( file=paste("ensem_tree_",name,proc.time()[[3]],".csv",sep=""), ensem.tree, row.names=F )
       col.csr	= col.csr + 1
     }
   }

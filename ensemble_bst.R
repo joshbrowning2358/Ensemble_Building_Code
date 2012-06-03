@@ -30,8 +30,8 @@ bst.ensem = function( d, test.bt, cv.group, ind_col, dep_cols
     }
     col.csr = col.csr - length( tree.vec )
     print( paste( "This analysis is ", round(100*i/num.groups),"% complete",sep="" ) )
-    if( name=="" ) write.csv( file="ensem_bst.csv", ensem.bst )
-    if( name!="" ) write.csv( file=paste("ensem_bst_",name,".csv",sep=""), ensem.bst )
+    if( name=="" ) write.csv( file="ensem_bst.csv", ensem.bst, row.names=F )
+    if( name!="" ) write.csv( file=paste("ensem_bst_",name,".csv",sep=""), ensem.bst, row.names=F )
   }
   return( ensem.bst )
 }
@@ -66,8 +66,8 @@ bst.ensem.opt = function( d, test.bt, cv.group, ind_col, dep_cols
     if( name!="") colnames(ensem.bst) = paste(colnames(ensem.bst),"_",name,sep="")
     print( paste( "This analysis is ", round(100*i/num.groups),"% complete",sep="" ) )
   }
-  if( name=="" ) write.csv( file="ensem_bst_opt.csv", ensem.bst )
-  if( name!="" ) write.csv( file=paste("ensem_bst_opt_",name,".csv",sep=""), ensem.bst )
+  if( name=="" ) write.csv( file="ensem_bst_opt.csv", ensem.bst, row.names=F )
+  if( name!="" ) write.csv( file=paste("ensem_bst_opt_",name,".csv",sep=""), ensem.bst, row.names=F )
   return( ensem.bst )
 }
 

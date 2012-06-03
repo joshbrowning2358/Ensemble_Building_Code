@@ -48,7 +48,7 @@ knn.ensem	= function( d, test.bt, cv.group, ind_col, dep_cols
         colnames( ensem.knn )[col.csr] = paste( "knn_fac_neigh", k, "_comp",j,sep="")
 	  col.csr	= col.csr - 1
         print( paste( "This analysis is ", round(100*(i+(which(comp.vec==j)-1)*num.groups+length(comp.vec)*num.groups*(which(neigh.vec==k)-1))/(length(neigh.vec)*length(comp.vec)*num.groups)),"% complete",sep="" ) )
-        write.csv( file=paste("ensem_knn_",proc.time[[3]],".csv",sep=""), ensem.knn, row.names=F )
+        write.csv( file=paste("ensem_knn_",proc.time()[[3]],".csv",sep=""), ensem.knn, row.names=F )
       }
 	print( col.csr )
       col.csr	= col.csr + 2

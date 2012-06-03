@@ -44,8 +44,8 @@ svm.ensem = function( d, test.bt, cv.group, ind_col, dep_cols
               ( as.numeric( predict( t, newdata=d[test.bt==1,dep_cols] ) ) - 1) /num.groups
           colnames( ensem.svm )[col.csr] = paste( "svm_fac_sig", round(j),"_C",round(k,3),sep="")
           if( name!="") colnames(ensem.svm)[col.csr] = paste(colnames(ensem.svm)[col.csr],"_",name,sep="")
-          if( name=="" ) write.csv( file="ensem_svm.csv", ensem.svm )
-          if( name!="" ) write.csv( file=paste("ensem_svm_",name,".csv",sep=""), ensem.svm )
+          if( name=="" ) write.csv( file=paste("ensem_svm_",proc.time()[[3]],".csv",sep=""), ensem.svm, row.names=F )
+          if( name!="" ) write.csv( file=paste("ensem_svm_",name,proc.time()[[3]],".csv",sep=""), ensem.svm, row.names=F )
           col.csr = col.csr - 1
         }
         if( type=="Regression" )

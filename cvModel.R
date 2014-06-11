@@ -88,8 +88,11 @@ predict.nn = function( mod, newdata ){
 #model: A string containing the model specification. data arguments will be ignored, and the function used is required to have a formula argument.
 #pred.cols: Some algorithms support multiple predictions (multiple averaged models, for example). pred.cols controls how many models should be estimated, and estimations are choosen in a meaningful way. Defaults to 1 (or 10 if gbm or fit.glmnet)
 #Currently supported functions: fit.nn (defined above), neuralnet, gbm, randomForest, glm, lm, rpart, glmnet, pcr
+model = "gam( Signal ~ s(DER_mass_MMC), family='binomial' )"
+
 cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + X5, hidden=4, err.fct='sse')", pred.cols=1+9*grepl("(^fit.glmnet|^gbm)",model) ){
   ensem = data.frame( matrix(0, nrow=nrow(d), ncol=pred.cols ) )
+  colnames(ensem) = paste0("V",1:ncol(ensem))
   #Set up the rownames of ensem to match d. This makes inserting in predicted values much easier later:
   rownames(ensem) = 1:nrow(d)
   rownames(d) = 1:nrow(d)
@@ -132,8 +135,10 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
       #Remove extra columns in ensem, if applicable
       ensem = ensem[,1:ncol(preds)]
     }
-    if( grepl("(^randomForest|^nnet)", model) )
+    if( grepl("(^randomForest|^nnet)", model) ){
       preds = data.frame(predict(fit, newdata=predict))
+      mods[[length(mods)+1]] = fit      
+    }
     if( grepl("^([g]*lm|rpart)", model) ){
       preds = data.frame(predict(fit, newdata=predict))
       mods[[length(mods)+1]] = fit$coeff
@@ -156,7 +161,9 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
       preds = preds[,col.index]
       colnames(ensem) = paste0("glmnet_lambda",round(fit$lambda[col.index],4))
     }
-    colnames(ensem) = gsub("\\.", "d", colnames(ensem))
+    if( grepl("^gam", model) ){
+      preds = data.frame(predict(fit, newdata=predict))
+    }
     rownames(preds) = rownames(predict)
     
     #Insert the predicted values for the cv group into the ensem data.frame.
@@ -168,6 +175,5 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
     ensem[test.index,] = ensem[test.index,] + preds[rownames(preds) %in% test.index,]/(length(unique(cvGroup))-1)
     print(paste0("Model ",i,"/",length(unique(cvGroup[cvGroup>0]))," has finished"))
   }
-  if(length(mods)==0) return(ensem)
   return(list(ensemble=ensem, models=mods))
 }

@@ -4,10 +4,10 @@
 #steps: how many iterations should be ran? Note this may need adjustment based on convergence.
 #print: how many times should the function print the current fit number and LMS?
 #...: other parameters to be passed into newff or train in the AMORE package.
-fit.nn = function( form, data, hidden, steps=1000, print=10, learning.rate.global=1e-2, momentum.global=.5, report=T
+fit.AMORE = function( form, data, hidden, steps=1000, print=10, learning.rate.global=1e-2, momentum.global=.5, report=T
                    ,error.criterium="LMS", Stao=NA, hidden.layer="tansig", output.layer="purelin", method="ADAPTgdwm" ){
   #Parse the form object to determine number of input neurons and relevant data
-  if( !is.formula(form) ) stop("Formula incorrectly specified")
+  if( !is(form, "formula") ) stop("Formula incorrectly specified")
   form = as.character( form )
   indCol = (1:ncol(data))[colnames(data)==form[2]]
   depVars = strsplit(form[3],"+", fixed=T)
@@ -56,9 +56,29 @@ fit.glmnet = function(form, data, lambda=1*(0.9)^(0:100), family=c("gaussian","b
   glmnet(x=as.matrix(data[,depCols]), y=as.matrix(data[,indCol]), lambda=lambda, family=family, alpha=alpha, nlambda=nlambda, maxit=maxit)
 }
 
+fit.rbf = function( form, data, size, maxit=1000, linOut=T, print=10, report=T ){
+  #Parse the form object to determine number of input neurons and relevant data
+  if( !is(form, "formula") ) stop("Formula incorrectly specified")
+
+  form = as.character( form )
+  indCol = (1:ncol(data))[colnames(data)==form[2]]
+  depVars = strsplit(form[3],"+", fixed=T)
+  #period matches everything:
+  if( depVars=="." ){
+    depCols = (1:ncol(data))[-indCol]
+  } else {
+    depVars = sapply( depVars, function(x)gsub(" ","",x) )
+    depCols = (1:ncol(data))[colnames(data) %in% depVars]
+  }
+  
+  #Fit the neural network
+  mod = rbf(d[,depCols], d[,indCol], size=size, maxit=maxit, linOut=linOut)
+  return(mod)
+}
+
 #mod: A list as output by fit.nn. It should contain hidden.wts, output.wts, activation.function and form. Custom activation functions are not supported!
 #newdata: the data for which a prediction is desired.
-predict.nn = function( mod, newdata ){
+predict.AMORE = function( mod, newdata ){
   newdata = cbind( 1, newdata )
   depVars = strsplit(mod$form[3],"+", fixed=T)
   depVars = sapply( depVars, function(x)gsub(" ","",x) )
@@ -98,6 +118,7 @@ predict.nn = function( mod, newdata ){
 # glmnet
 # pcr
 # gam (from mgcv)
+# rbf (radial basis function neural network in RSNNS)
 cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + X5, hidden=4, err.fct='sse')", pred.cols=1+9*grepl("(^fit.glmnet|^gbm)",model) ){
   ensem = data.frame( matrix(0, nrow=nrow(d), ncol=pred.cols ) )
   colnames(ensem) = paste0("V",1:ncol(ensem))
@@ -143,7 +164,7 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
       #Remove extra columns in ensem, if applicable
       ensem = ensem[,1:ncol(preds)]
     }
-    if( grepl("(^randomForest|^nnet)", model) ){
+    if( grepl("(^randomForest|^nnet|^fit.rbf)", model) ){
       preds = data.frame(predict(fit, newdata=predict))
       mods[[length(mods)+1]] = fit      
     }

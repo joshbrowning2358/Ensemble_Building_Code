@@ -151,6 +151,14 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
       predict.temp = predict[,colnames(predict) %in% depCols]
       preds = compute(fit, predict.temp)$net.result
     }
+    if( grepl("^fit.rbf", model) ){
+      #neuralnet prediction requires a dataframe with only the used variables in it:
+      depCols = gsub( ",.*", "", gsub(".*~", "", model ) )
+      depCols = strsplit(depCols, "+", fixed=T)[[1]]
+      depCols = sapply(depCols, function(x){gsub(" ","",x)} )
+      predict.temp = predict[,colnames(predict) %in% depCols]
+      preds = predict(fit, predict.temp)
+    }
     if( grepl("^fit.nn", model) ){
       preds = predict.nn(fit, newdata=predict)
       mods[[length(mods)+1]] = fit
@@ -164,7 +172,7 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
       #Remove extra columns in ensem, if applicable
       ensem = ensem[,1:ncol(preds)]
     }
-    if( grepl("(^randomForest|^nnet|^fit.rbf)", model) ){
+    if( grepl("(^randomForest|^nnet)", model) ){
       preds = data.frame(predict(fit, newdata=predict))
       mods[[length(mods)+1]] = fit      
     }

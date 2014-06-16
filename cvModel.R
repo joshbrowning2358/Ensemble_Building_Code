@@ -72,7 +72,7 @@ fit.rbf = function( form, data, size, maxit=1000, linOut=T, print=10, report=T )
   }
   
   #Fit the neural network
-  mod = rbf(d[,depCols], d[,indCol], size=size, maxit=maxit, linOut=linOut)
+  mod = rbf(data[,depCols], data[,indCol], size=size, maxit=maxit, linOut=linOut)
   return(mod)
 }
 

@@ -120,6 +120,12 @@ predict.AMORE = function( mod, newdata ){
 # gam (from mgcv)
 # rbf (radial basis function neural network in RSNNS)
 cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + X5, hidden=4, err.fct='sse')", pred.cols=1+9*grepl("(^fit.glmnet|^gbm)",model) ){
+  #Data quality checks
+  if(indCol>ncol(d))
+    stop("indCol must be <= ncol(d)!")
+  if(length(cvGroup)!=dim(d))
+    stop("length(cvGroup)!=dim(d).  Maybe cvGroup is a matrix?")  
+  
   ensem = data.frame( matrix(0, nrow=nrow(d), ncol=pred.cols ) )
   colnames(ensem) = paste0("V",1:ncol(ensem))
   #Set up the rownames of ensem to match d. This makes inserting in predicted values much easier later:
@@ -138,6 +144,7 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
   for( i in sort(unique(cvGroup[cvGroup>0])) ){
     train = d[!cvGroup %in% c(-1,i),]
     predict = d[cvGroup %in% c(-1,i),-indCol]
+    rownames(predict) = rownames(ensem)[cvGroup %in% c(-1,i)]
     
     #Evaluate the model
     fit = eval( parse( text=model) )
@@ -146,17 +153,27 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
     if( grepl("^neuralnet", model) ){
       #neuralnet prediction requires a dataframe with only the used variables in it:
       depCols = gsub( ",.*", "", gsub(".*~", "", model ) )
-      depCols = strsplit(depCols, "+", fixed=T)[[1]]
-      depCols = sapply(depCols, function(x){gsub(" ","",x)} )
-      predict.temp = predict[,colnames(predict) %in% depCols]
+      if(depCols=="." & length(depCols)==1)
+        predict.temp = predict
+      else
+      {
+        depCols = strsplit(depCols, "+", fixed=T)[[1]]
+        depCols = sapply(depCols, function(x){gsub(" ","",x)} )
+        predict.temp = predict[,colnames(predict) %in% depCols]
+      }
       preds = compute(fit, predict.temp)$net.result
     }
     if( grepl("^fit.rbf", model) ){
-      #neuralnet prediction requires a dataframe with only the used variables in it:
+      #rbf prediction requires a dataframe with only the used variables in it:
       depCols = gsub( ",.*", "", gsub(".*~", "", model ) )
-      depCols = strsplit(depCols, "+", fixed=T)[[1]]
-      depCols = sapply(depCols, function(x){gsub(" ","",x)} )
-      predict.temp = predict[,colnames(predict) %in% depCols]
+      if(depCols=="." & length(depCols)==1)
+        predict.temp = predict
+      else
+      {
+        depCols = strsplit(depCols, "+", fixed=T)[[1]]
+        depCols = sapply(depCols, function(x){gsub(" ","",x)} )
+        predict.temp = predict[,colnames(predict) %in% depCols]
+      }
       preds = predict(fit, predict.temp)
     }
     if( grepl("^fit.nn", model) ){

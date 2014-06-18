@@ -123,8 +123,8 @@ cvModel = function(d, cvGroup, indCol, model="neuralnet(Y ~ X1 + X2 + X3 + X4 + 
   #Data quality checks
   if(indCol>ncol(d))
     stop("indCol must be <= ncol(d)!")
-  if(length(cvGroup)!=dim(d))
-    stop("length(cvGroup)!=dim(d).  Maybe cvGroup is a matrix?")  
+  if(length(cvGroup)!=nrow(d))
+    stop("length(cvGroup)!=nrow(d).  Maybe cvGroup is a matrix?")  
   
   ensem = data.frame( matrix(0, nrow=nrow(d), ncol=pred.cols ) )
   colnames(ensem) = paste0("V",1:ncol(ensem))

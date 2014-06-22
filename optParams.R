@@ -1,20 +1,21 @@
 #func: function name (randomForest, gbm, rbf, etc.)
 #form: Formula for the model fit.  Must be used with data and not x, y
-#data: data used to specify the model.  Must be used with form and not x, y
+#data: data used to specify the model.  Must be used with form and not x, y.
 #x: independent variables for model.  Must be used with y and not data,form
 #y: dependent variable for model.  Must be used with x and not data,form
 #replications: how many random samples should be pulled for each test to verify model performance
-#nTrain: vector of sample sizes to train on.  Should be something like 1000, 10000, ...  Idea is to optimize quickly on small samples and improve estimates on larger datasets.	
-#optFunc: function used to optimize parameters.  Should have pred and actual as the only arguments.
+#nTrain: vector of sample sizes to train on.  Should be something like 1000, 10000, ...  Idea is to optimize quickly on small samples and improve estimates on larger datasets.  
+#optFunc: function used to optimize parameters.  Should have pred and actual as the only arguments.  This function will also have access to samVal, the sampled validation values.  So, you may use a weight from d, for example, via d$Weight[samVal], even if d$Weight isn't passed to this function.  Must create this so that minimum scores are best, can change max-best functions by adding a negative
 #optVals: For numeric and ordered parameters, we optimize over seq(min, max,length.out=?) where min and max are specified.  This argument specifies the "?" for each case.  Ignored for "character" arguments
 #predFunc: function used to predict onto training set.  Should take one argument: newdata
 #constArgs: Should be a named list for arguments that should be passed to func
 #coldStart: how many random cases to try before fixing the initial guess parameters
-optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL, replications=30
-  ,nTrain=c(100,1000,10000), nValid=nTrain
+optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
+  ,nTrain=c(100,1000,10000), nValid=nTrain, replications=rep(30, length(nTrain))
   ,optFunc=function(pred,actual){mean((pred-actual)^2)}
   ,optArgs=list()
   ,optVals=rep(5,length(optArgs))
+  ,optRed=rep(.7,length(optArgs))
   ,predFunc=predict
   ,constArgs=list()
   ,coldStart=10)
@@ -45,9 +46,6 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL, replications=30
     (x[[2]]=="categorical" & length(x[[3]])>1)}) ) )
     stop("optArgs is not of the right form!")
   #Testing functions to validate appropriate arguments
-  out = optFunc(act=0,pred=1)
-  if(!is.numeric(out) & length(out)!=1)
-    stop("optFunc does not return a numeric value of length one!")
 
   library(ggplot2)
   
@@ -79,7 +77,7 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL, replications=30
 
       fit = do.call(func, args)
       preds = predFunc(fit, newdata=x[samVal,])
-      error = optFunc(preds, y[samVal])
+      error = optFunc(pred=preds, actual=y[samVal])
     }
     if(error<bestError){
       currArgs = tempArgs
@@ -103,7 +101,7 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL, replications=30
         paramVals = seq(paramVals[1], paramVals[2], length.out=optVals[par])
       
       errors = matrix(0, nrow=replications, ncol=length(paramVals))
-      for( repl in 1:replications ){
+      for( repl in 1:replications[epoch] ){
         samTrn = sample(n, size=nTrain[epoch])
         #Sample validation observations from 1:n, removing training obs
         samVal = sample((1:n)[-samTrn], size=nValid[epoch])
@@ -139,12 +137,36 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL, replications=30
         } #close parameter value loop
       } #close replication loop
       #Update currArgs with the best fit
-      errors = apply(errors, 2, mean)
-      currArgs[currParam] = paramVals[which.min(errors)]
+      errors = apply(errors, 2, function(x){
+        data.frame(mean=mean(x), sd=sd(x))})
+      errors = do.call("rbind", errors)
+      newPar = paramVals[which.min(errors[,1])]
+      currArgs[currParam] = newPar
+      #Update optArgs: tune parameter search as appropriate
+      if(optArgs[[par]][[2]] %in% c("ordered", "numeric") ){
+        oldRange = optArgs[[par]][[3]]
+        len = oldRange[2] - oldRange[1]
+        len = len*optRed[par]
+        newRange = newPar + c(-len/2,len/2)
+        
+        #Move newRange if outside of original range
+        if(newRange[1]<oldRange[1])
+          newRange = newRange + oldRange[1] - newRange[1]
+        if(newRange[2]>oldRange[2])
+          newRange = newRange + oldRange[2] - newRange[2]
+      } else {
+        #categorical variables, remove ones from search that did significantly worse.
+        best = errors[which.min(errors[,1]),]
+        #Assume normality, then we're testing difference in means with different variances
+        zVals = sapply( 1:nrow(errors), function(i){
+          (errors[i,"mean"]-best["mean"])/sqrt(errors[i,"sd"]^2+best["sd"]^2) } )
+        #Remove vals with z-scores greater than 2, i.e. alpha=.05 test
+        optArgs[[par]][[3]] = optArgs[[par]][[3]][zVals<2]
+      }
       
       ggsave(paste0("Optimization_Param_",currParam,"_epoch_",epoch,".png")
-        ,qplot( x=paramVals, y=errors ) + labs(x=currParam) )
-      print(paste("Parameter",currParam,"optimized to",paramVals[which.min(errors)],"for epoch",epoch))
+        ,qplot( x=paramVals, y=errors[,1] ) + labs(x=currParam) )
+      print(paste("Parameter",currParam,"optimized to",paramVals[which.min(errors[,1])],"for epoch",epoch))
     } #close parameter loop
   } #close epoch loop
 }

@@ -154,6 +154,7 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
           newRange = newRange + oldRange[1] - newRange[1]
         if(newRange[2]>oldRange[2])
           newRange = newRange + oldRange[2] - newRange[2]
+        optArgs[[par]][[3]] = newRange
       } else {
         #categorical variables, remove ones from search that did significantly worse.
         best = errors[which.min(errors[,1]),]

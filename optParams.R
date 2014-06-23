@@ -50,6 +50,7 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
   library(ggplot2)
   
   bestError = Inf
+  print("Starting cold start...")
   for(i in 1:coldStart ){
     tempArgs = randArgs(optArgs)
     samTrn = sample(n, size=nTrain[1])
@@ -84,6 +85,7 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
       bestError = error
     }
   }
+  print("Cold start completed, beginning main optimization...")
   
   #Main training loop
   for(epoch in 1:length(nTrain)){
@@ -165,8 +167,11 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
         optArgs[[par]][[3]] = optArgs[[par]][[3]][zVals<2]
       }
       
+      errors$paramVals = paramVals
       ggsave(paste0("Optimization_Param_",currParam,"_epoch_",epoch,".png")
-        ,qplot( x=paramVals, y=errors[,1] ) + labs(x=currParam) )
+        ,ggplot(errors, aes(x=paramVals)) + geom_point(aes(y=mean)) +
+          geom_errorbar(aes(ymax=mean+2*sd, ymin=mean-2*sd)) +
+          labs(x=currParam, y="Value of optFunc()") )
       print(paste("Parameter",currParam,"optimized to",paramVals[which.min(errors[,1])],"for epoch",epoch))
     } #close parameter loop
   } #close epoch loop

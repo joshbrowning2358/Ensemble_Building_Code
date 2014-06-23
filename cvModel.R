@@ -70,7 +70,7 @@ predict.AMORE = function( mod, newdata ){
 #saveMods: set to true if a list of all the fitted models should be returned as well as the fitted, cross-validated predictions
 #Change pred.cols to 10 for gbm and glmnet!!!
 cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NULL, y=NULL
-        ,args=list(), pred.cols=1, saveMods=F ){
+        ,args=list(), pred.cols=1, saveMods=F, seed=321 ){
   #Data quality checks
   if(!is(modelFunc,"function"))
     stop("func must be a function!")
@@ -86,6 +86,8 @@ cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NU
   n = ifelse( is.null(form), length(y), nrow(d) )
   if(length(cvGroup)!=n)
     stop("length(cvGroup)!=nrow(d).  Maybe cvGroup is a matrix?")  
+  
+  set.seed(seed)
   
   ensem = data.frame( matrix(0, nrow=n, ncol=pred.cols ) )
   colnames(ensem) = paste0("V",1:ncol(ensem))
@@ -133,5 +135,5 @@ cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NU
     ensem[test.index,] = ensem[test.index,] + preds[rownames(preds) %in% test.index,]/(length(unique(cvGroup))-1)
     print(paste0("Model ",i,"/",length(unique(cvGroup[cvGroup>0]))," has finished"))
   }
-  return(list(ensemble=ensem, models=mods))
+  return(list(ensemble=ensem, models=mods, call=sys.call()))
 }

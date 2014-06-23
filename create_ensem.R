@@ -1,68 +1,71 @@
-setwd( "~/Desktop/Insult Detection" )
-source( "~/Desktop/Insult Detection/Ensemble Functions/auc.R" )
-
-eps.round		= function( p, epsilon=.01 )
-{
-  min.e	= function(x) { max(x,epsilon) }
-  max.e	= function(x) { min(x,1-epsilon) }
-  return( sapply( sapply( p, min.e ), max.e ) )
-}
-
-num.iters	= 100
-top.N		= 10
-prune		= .7
-base.loss	= .5
-pred.rows	= 1:sum( dFinal$Insult >-1 )
-#epsilon	= .01
-
-ensem			= read.csv( file="~/Desktop/Insult Detection/ensem_ccr.csv", sep=";" )
-ensem			= cbind( ensem, read.csv( file="~/Desktop/Insult Detection/ensem_rf.csv", sep=";" ) )
-ensem			= cbind( ensem, read.csv( file="~/Desktop/Insult Detection/ensem_svm.csv", sep=";" ) )
-ensem			= cbind( ensem, read.csv( file="~/Desktop/Insult Detection/ensem_lin.csv", sep=";" ) )
-ensem			= cbind( ensem, read.csv( file="~/Desktop/Insult Detection/ensem_bst.csv", sep=";" ) )
-
-#ensem			= cbind( ensem, read.csv( file="~/Desktop/Insult Detection/ensem_lin.csv", sep="," ) )
-
-#  ensem	= apply( ensem, 2, eps.round )
-  best.ll.vec	= rep(NA,num.iters)
-  weights	= rep("",num.iters)
-
-  #To avoid overfitting, prune the bottom end of the models (and anything with a worse than guessing metric).
-  loss.vec	= rep(1,ncol(ensem))
-  for( i in 1:ncol( ensem ) )
-  {
-    loss.vec[i]	= auc( ensem[pred.rows,i] , dFinal[pred.rows,]$Insult, iter=3000 )[[1]]
+#lossFunc: The function we wish to minimize by ensembling.  Note: if larger values are good, just multiply by -1 to convert to a loss metric.
+#topN:
+#numIters:
+#prune: Specify a percentage of models to remove.  Only the top (1-prune)*100% models will be used.
+#baseLoss is the loss of a random guess
+makeEnsem = function( actual, lossFunc=function(preds, actual){
+    mean( (preds-actual)^2 )
   }
-  loss.vec = as.numeric( loss.vec )
-  plot( loss.vec )
-  ensem		= ensem[,loss.vec>=base.loss]
-  loss.vec	= loss.vec[loss.vec>=base.loss]
-  ensem		= ensem[,rank(loss.vec)>=length(loss.vec)*prune]
-  loss.vec	= loss.vec[rank(loss.vec)>=length(loss.vec)*prune]
-  plot( loss.vec )
-  final		= apply( ensem[,rank(loss.vec)<=top.N], 1, mean )	#Can let in more than top.N, depending on rank
-  weights	= c(colnames(ensem)[rank(loss.vec)<=top.N],weights)
-  best.ll.vec	= c(rep(auc(final[pred.rows],dFinal[pred.rows,]$Insult)[[1]],top.N),best.ll.vec)
-  top.N		= sum( rank(loss.vec)<=top.N )
-  best.loss	= auc( final[pred.rows], dFinal[pred.rows,]$Insult, iter=3000 )[[1]]
-  for( i in 1:num.iters )
+  , numIters=100, topN=10, prune=.7, baseLoss=.5){
+  #Data quality check
+  if(numIters<1)
+    stop("numIters must be positive!")
+  if(topN<0)
+    stop("top must be non-negative!")
+  if(prune>1 | prune<0)
+    stop("prune must be between 0 and 1!")
+  if(!"Submissions" %in% list.files())
+    stop("No Submissions sub-directory in current directory!")
+  
+  trainRows = !is.na(actual)
+  testRows = is.na(actual)
+  
+  setwd("Submissions")
+  files = list.files()
+  files = files[grepl("_raw", files)]
+  ensemDf = data.frame( read.csv(files[1]) )
+  if(length(actual)!=nrow(ensemDf))
+    stop("length(actual)!=nrow(ensemDf).  Ensure actual has NA's for test obs!")
+  colnames(ensemDf) = gsub("_raw.csv", "", files[1])
+  for(file in files[-1] ){
+    ensemDf = cbind(ensemDf, read.csv( file ) )
+    colnames(ensemDf)[ncol(ensemDf)] = gsub("_raw.csv", "", file)
+  }
+    
+  lossVec = sapply( 1:ncol( ensemDf ), function(i){
+    lossFunc( ensemDf[trainRows,i] , actual[trainRows] )
+  } )
+  #To avoid overfitting, prune the bottom end of the models (and anything with a worse than guessing metric).
+  ensemDf = ensemDf[,lossVec>=baseLoss]
+  lossVec	= lossVec[lossVec>=baseLoss]
+  ensemDf = ensemDf[,rank(lossVec)<=length(lossVec)*(1-prune)]
+  lossVec	= lossVec[rank(lossVec)<=length(lossVec)*(1-prune)]
+  preds		= apply( ensemDf[,rank(lossVec)<=topN], 1, mean )	#Can let in more than top.N, depending on rank
+  weights	= colnames(ensemDf)[rank(lossVec)<=topN]
+  bestLoss= rep(lossFunc(preds[trainRows],actual[trainRows]), sum(rank(lossVec)<=topN))
+  currLoss= lossFunc( preds[trainRows], actual[trainRows] )
+  for( i in (length(weights)+1):numIters )
   {
-    for( j in 1:ncol( ensem ) )
+    #Check if an improvement happened.  If so, append new values to vectors
+    improvement = FALSE
+    for( j in 1:ncol( ensemDf ) )
     {
-      final.temp	= final*(i-1)/i + ensem[,j]/i
-      loss.temp		= auc( final.temp[pred.rows], dFinal[pred.rows,]$Insult, iter=3000 )[[1]]
-      if( loss.temp > best.loss )
+      predsTemp	= preds*(i-1)/i + ensemDf[,j]/i
+      lossTemp	= lossFunc( predsTemp[trainRows], actual[trainRows] )
+      if( lossTemp < currLoss )
       {
-        best.loss		= loss.temp
-        final.save		= final.temp
-        weights[i+top.N]	= colnames(ensem)[j]
-        best.ll.vec[i+top.N]	= best.loss
+        currLoss = lossTemp
+        currPreds = predsTemp
+        currVar = colnames(ensemDf)[j]
+        improvement = TRUE
       }
     }
-    final		= final.save
+    preds		= currPreds
+    weights = c(weights, ifelse(improvement, currVar, NA))
+    bestLoss= c(bestLoss, currLoss)
   }
-  plot( best.ll.vec )
-#}
 
-write.csv( file="ensem_20120913.csv", final[dFinal$Insult==-1], row.names=F )
-save.image()
+  #Move out of Submissions directory
+  setwd("..")
+  return( list(preds=preds, weights=weights, bestLoss=bestLoss) )
+}

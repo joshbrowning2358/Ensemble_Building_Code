@@ -18,8 +18,10 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
   ,optRed=rep(.7,length(optArgs))
   ,predFunc=predict
   ,constArgs=list()
-  ,coldStart=10)
+  ,coldStart=10
+  ,seed=321)
 {
+  set.seed(seed)
   #data quality checks
   if(!is(func,"function"))
     stop("func must be a function!")

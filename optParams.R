@@ -79,6 +79,8 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
       args = c(list(x=x[samTrn,]), args)
 
       fit = do.call(func, args)
+      #pass samVal up to Global environment so predFunc can access it, if necessary
+      samVal <<- samVal
       preds = predFunc(fit, newdata=x[samVal,])
       error = optFunc(pred=preds, actual=y[samVal])
     }
@@ -109,6 +111,8 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
         samTrn = sample(n, size=nTrain[epoch])
         #Sample validation observations from 1:n, removing training obs
         samVal = sample((1:n)[-samTrn], size=nValid[epoch])
+        #pass samVal up to Global environment so predFunc can access it, if necessary
+        samVal <<- samVal
         for(parVal in 1:length(paramVals)){
           
           #Start args with the constArgs that you always need

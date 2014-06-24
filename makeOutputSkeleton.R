@@ -22,5 +22,5 @@ makeOutput = function(preds, call)
   } else {
     desc = data.frame(newId, call)
   }
-  write.csv(desc, file="Submissions/desc.csv")
+  write.csv(desc, file="Submissions/desc.csv", row.names=F)
 }

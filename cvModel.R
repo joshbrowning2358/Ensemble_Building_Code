@@ -1,63 +1,3 @@
-#form: specify the model formula, i.e. Y ~ X1 + X2 + X3. Note that "." notation is supported.
-#data: a dataframe containing the data for which the model is desired.
-#hidden: the number of hidden neurons in the network. The package only supports one hidden layer.
-#steps: how many iterations should be ran? Note this may need adjustment based on convergence.
-#print: how many times should the function print the current fit number and LMS?
-#...: other parameters to be passed into newff or train in the AMORE package.
-fit.AMORE = function( form, data, hidden, steps=1000, print=10, learning.rate.global=1e-2, momentum.global=.5, report=T
-                   ,error.criterium="LMS", Stao=NA, hidden.layer="tansig", output.layer="purelin", method="ADAPTgdwm" ){
-  #Parse the form object to determine number of input neurons and relevant data
-  if( !is(form, "formula") ) stop("Formula incorrectly specified")
-  form = as.character( form )
-  indCol = (1:ncol(data))[colnames(data)==form[2]]
-  depVars = strsplit(form[3],"+", fixed=T)
-  #period matches everything:
-  if( depVars=="." ){
-    depCols = (1:ncol(data))[-indCol]
-  } else {
-    depVars = sapply( depVars, function(x)gsub(" ","",x) )
-    depCols = (1:ncol(data))[colnames(data) %in% depVars]
-  }
-  
-  #Fit the neural network
-  mod = newff( n.neurons=c(length(depCols)+1,hidden,1), learning.rate.global=1e-2, momentum.global=0.5,
-               error.criterium="LMS", Stao=NA, hidden.layer="tansig",
-               output.layer="purelin", method="ADAPTgdwm")
-  mod.fit = train( mod, T=as.matrix(data[,indCol]), P=cbind(1,data[,depCols]), n.shows=print, show.step=steps/print, report=report )
-  
-  #Pull off the output weights
-  weights = lapply( mod.fit$net$neurons, function(x)x$weights )
-  hidden.wts = do.call( "rbind", weights[1:hidden] )
-  output.wts = weights[[hidden+1]]
-  return(list(hidden.wts=hidden.wts, output.wts=output.wts, activation.function=hidden.layer, form=form))
-}
-
-#mod: A list as output by fit.nn. It should contain hidden.wts, output.wts, activation.function and form. Custom activation functions are not supported!
-#newdata: the data for which a prediction is desired.
-predict.AMORE = function( mod, newdata ){
-  newdata = cbind( 1, newdata )
-  depVars = strsplit(mod$form[3],"+", fixed=T)
-  depVars = sapply( depVars, function(x)gsub(" ","",x) )
-  newdata = newdata[,colnames(newdata) %in% c("1",depVars)]
-  if( mod$activation.function=="tansig" ){
-    neurons = tanh( as.matrix(newdata) %*% t(mod$hidden.wts) )
-    preds = neurons %*% mod$output.wts
-  }
-  if( mod$activation.function=="purelin" ){
-    neurons = as.matrix(newdata) %*% t(mod$hidden.wts)
-    preds = neurons %*% mod$output.wts
-  }
-  if( mod$activation.function=="sigmoid" ){
-    neurons = 1/(1+exp(-as.matrix(newdata) %*% t(mod$hidden.wts)))
-    preds = neurons %*% mod$output.wts
-  }
-  if( mod$activation.function=="hardlim" ){
-    neurons = ifelse(as.matrix(newdata) %*% t(mod$hidden.wts)>0,1,0)
-    preds = neurons %*% mod$output.wts
-  }
-  return(preds)
-}
-
 #modelFunc: function for fitting the model.  Must take form, data or x,y as arguments, as well as args.
 #cvGroup: vector of length=nrow(d) or nrow(x).  1-k specify the k cross-validation groups, -1 specifies the test data
 #predFunc: function such that predFunc(fit, newdata) generates predictions for newdata.  newdata is of the same form as d or x.
@@ -119,7 +59,7 @@ cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NU
     #Evaluate the model
     fit = do.call( modelFunc, args=newArgs )
     preds = predFunc(fit, newdata=predData )
-    if(is(preds,"numeric")){
+    if(is(preds,"numeric") | (is(preds,"array") & length(dim(preds))==1) ){
       preds = matrix(preds,ncol=1)
       rownames(preds) = rownames(predData)
     }
@@ -136,4 +76,64 @@ cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NU
     print(paste0("Model ",i,"/",length(unique(cvGroup[cvGroup>0]))," has finished"))
   }
   return(list(ensemble=ensem, models=mods, call=sys.call()))
+}
+
+#form: specify the model formula, i.e. Y ~ X1 + X2 + X3. Note that "." notation is supported.
+#data: a dataframe containing the data for which the model is desired.
+#hidden: the number of hidden neurons in the network. The package only supports one hidden layer.
+#steps: how many iterations should be ran? Note this may need adjustment based on convergence.
+#print: how many times should the function print the current fit number and LMS?
+#...: other parameters to be passed into newff or train in the AMORE package.
+fit.AMORE = function( form, data, hidden, steps=1000, print=10, learning.rate.global=1e-2, momentum.global=.5, report=T
+                   ,error.criterium="LMS", Stao=NA, hidden.layer="tansig", output.layer="purelin", method="ADAPTgdwm" ){
+  #Parse the form object to determine number of input neurons and relevant data
+  if( !is(form, "formula") ) stop("Formula incorrectly specified")
+  form = as.character( form )
+  indCol = (1:ncol(data))[colnames(data)==form[2]]
+  depVars = strsplit(form[3],"+", fixed=T)
+  #period matches everything:
+  if( depVars=="." ){
+    depCols = (1:ncol(data))[-indCol]
+  } else {
+    depVars = sapply( depVars, function(x)gsub(" ","",x) )
+    depCols = (1:ncol(data))[colnames(data) %in% depVars]
+  }
+  
+  #Fit the neural network
+  mod = newff( n.neurons=c(length(depCols)+1,hidden,1), learning.rate.global=1e-2, momentum.global=0.5,
+               error.criterium="LMS", Stao=NA, hidden.layer="tansig",
+               output.layer="purelin", method="ADAPTgdwm")
+  mod.fit = train( mod, T=as.matrix(data[,indCol]), P=cbind(1,data[,depCols]), n.shows=print, show.step=steps/print, report=report )
+  
+  #Pull off the output weights
+  weights = lapply( mod.fit$net$neurons, function(x)x$weights )
+  hidden.wts = do.call( "rbind", weights[1:hidden] )
+  output.wts = weights[[hidden+1]]
+  return(list(hidden.wts=hidden.wts, output.wts=output.wts, activation.function=hidden.layer, form=form))
+}
+
+#mod: A list as output by fit.nn. It should contain hidden.wts, output.wts, activation.function and form. Custom activation functions are not supported!
+#newdata: the data for which a prediction is desired.
+predict.AMORE = function( mod, newdata ){
+  newdata = cbind( 1, newdata )
+  depVars = strsplit(mod$form[3],"+", fixed=T)
+  depVars = sapply( depVars, function(x)gsub(" ","",x) )
+  newdata = newdata[,colnames(newdata) %in% c("1",depVars)]
+  if( mod$activation.function=="tansig" ){
+    neurons = tanh( as.matrix(newdata) %*% t(mod$hidden.wts) )
+    preds = neurons %*% mod$output.wts
+  }
+  if( mod$activation.function=="purelin" ){
+    neurons = as.matrix(newdata) %*% t(mod$hidden.wts)
+    preds = neurons %*% mod$output.wts
+  }
+  if( mod$activation.function=="sigmoid" ){
+    neurons = 1/(1+exp(-as.matrix(newdata) %*% t(mod$hidden.wts)))
+    preds = neurons %*% mod$output.wts
+  }
+  if( mod$activation.function=="hardlim" ){
+    neurons = ifelse(as.matrix(newdata) %*% t(mod$hidden.wts)>0,1,0)
+    preds = neurons %*% mod$output.wts
+  }
+  return(preds)
 }

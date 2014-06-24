@@ -11,6 +11,8 @@
 #Change pred.cols to 10 for gbm and glmnet!!!
 cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NULL, y=NULL
         ,args=list(), pred.cols=1, saveMods=F, seed=321 ){
+  sysCall = paste( deparse( sys.call() ), collapse=" ")
+  
   #Data quality checks
   if(!is(modelFunc,"function"))
     stop("func must be a function!")
@@ -59,12 +61,11 @@ cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NU
     #Evaluate the model
     fit = do.call( modelFunc, args=newArgs )
     preds = predFunc(fit, newdata=predData )
-    if(is(preds,"numeric") | (is(preds,"array") & length(dim(preds))==1) ){
+    if(is(preds,"numeric") | (is(preds,"array") & length(dim(preds))==1) )
       preds = matrix(preds,ncol=1)
-      rownames(preds) = rownames(predData)
-    }
     if(saveMods)
       mods[[length(mods)+1]] = fit
+    rownames(preds) = rownames(predData)
     
     #Insert the predicted values for the cv group into the ensem data.frame.
     pred.index = (1:nrow(ensem))[cvGroup==i]
@@ -75,7 +76,7 @@ cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NU
     ensem[test.index,] = ensem[test.index,] + preds[rownames(preds) %in% test.index,]/(length(unique(cvGroup))-1)
     print(paste0("Model ",i,"/",length(unique(cvGroup[cvGroup>0]))," has finished"))
   }
-  return(list(ensemble=ensem, models=mods, call=sys.call()))
+  return(list(ensemble=ensem, models=mods, call=sysCall))
 }
 
 #form: specify the model formula, i.e. Y ~ X1 + X2 + X3. Note that "." notation is supported.

@@ -1,7 +1,7 @@
 makeOutput = function(preds, call)
 {
   #Data quality checks
-  if(!is(fname,"character"))
+  if(!is(call,"character"))
     stop("!is(fname,'character')")
   if(splitByGroup & length(modelNo)!=800000)
     stop("splitByGroup & length(modelNo)!=800000.  To split by group we need modelNo!")

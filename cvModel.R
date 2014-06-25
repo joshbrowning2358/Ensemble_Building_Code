@@ -61,7 +61,7 @@ cvModel = function(modelFunc, cvGroup, predFunc=predict, d=NULL, form=NULL, x=NU
     #Evaluate the model
     fit = do.call( modelFunc, args=newArgs )
     preds = predFunc(fit, newdata=predData )
-    if(is(preds,"numeric") | is(preds,"factor") | (is(preds,"array") & length(dim(preds))==1) )
+    if(is.null(dim(preds)) | (is(preds,"array") & length(dim(preds))==1) )
       preds = matrix(preds,ncol=1)
     if(saveMods)
       mods[[length(mods)+1]] = fit

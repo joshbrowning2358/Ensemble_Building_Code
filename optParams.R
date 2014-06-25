@@ -174,7 +174,7 @@ optParams = function(func, form=NULL, data=NULL, x=NULL, y=NULL
       }
       
       errors$paramVals = paramVals
-      ggsave(paste0("Optimization_Param_",currParam,"_epoch_",epoch,".png")
+      ggsave(paste0(Sys.info()[4],"_Param_",currParam,"_epoch_",epoch,".png")
         ,ggplot(errors, aes(x=paramVals)) + geom_point(aes(y=mean)) +
           geom_errorbar(aes(ymax=mean+2*sd, ymin=mean-2*sd)) +
           labs(x=currParam, y="Value of optFunc()") )

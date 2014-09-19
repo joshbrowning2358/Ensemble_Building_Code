@@ -24,5 +24,5 @@ Maintainer: Josh Browning <rockclimber112358@gmail.com>
 \keyword{ cross-validation }
 \keyword{ tuning-parameter }
 \examples{
-~~ simple examples of the most important functions ~~
+
 }

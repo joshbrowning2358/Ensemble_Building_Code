@@ -38,8 +38,6 @@ function(func, form=NULL, data=NULL, x=NULL, y=NULL
     stop("optArgs is not of the right form!")
   #Testing functions to validate appropriate arguments
 
-  library(ggplot2)
-  
   bestError = Inf
   print("Starting cold start...")
   for(i in 1:coldStart ){

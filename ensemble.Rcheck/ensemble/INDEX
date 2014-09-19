@@ -1,0 +1,8 @@
+cvModel                 Build an Cross-Validated Model
+ensemble-package        Fit ensemble models and optimize tuning
+                        parameters
+makeEnsem               Combine multiple predictions into a final
+                        ensemble prediction.
+makeOutput              Generate output in Kaggle format
+optParams               Optimize model parameters
+randArgs                Helper function for optParams

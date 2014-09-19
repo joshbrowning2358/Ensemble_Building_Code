@@ -60,12 +60,12 @@ Josh Browning (rockclimber112358@gmail.com)
 \examples{
 d = data.frame( x1=rnorm(1000), x2=rnorm(1000), y=rnorm(1000) )
 out = cvModel( modelFunc=glm
-    ,cvGroup=sample(1:10, size=1000, replace=T)
+    ,cvGroup=sample(1:10, size=1000, replace=TRUE)
     ,form="y ~ x1 + x2"
     ,d=d )
 library(glmnet)
 out = cvModel( modelFunc=glmnet
-    ,cvGroup=sample(1:10, size=1000, replace=T)
+    ,cvGroup=sample(1:10, size=1000, replace=TRUE)
     ,x=d[,1:2]
     ,y=d$y
     ,predFunc=function(fit, newdata){predict(fit, newx=newdata, s=c(4,2,1,.5))}

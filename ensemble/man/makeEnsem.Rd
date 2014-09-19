@@ -48,7 +48,7 @@ cvModel
 \examples{
 d = data.frame( x1=rnorm(1000), x2=rnorm(1000), y=rnorm(1000) )
 #Assume last 100 rows are test data
-cvGroup = c(sample(1:10,size=900,replace=T), rep(-1,100))
+cvGroup = c(sample(1:10,size=900,replace=TRUE), rep(-1,100))
 d$y[901:1000] = NA
 out = cvModel( modelFunc=glm
     ,cvGroup=cvGroup
@@ -62,8 +62,8 @@ out2 = cvModel( modelFunc=glmnet
     ,predFunc=function(fit, newdata){predict(fit, newx=newdata, s=c(4,2,1,.5))}
     ,pred.cols=4)
 dir.create("Submissions")
-write.csv(out$ensemble, file="Submissions/glm_raw.csv", row.names=F)
-write.csv(out2$ensemble, file="Submissions/glmnet_raw.csv", row.names=F)
+write.csv(out$ensemble, file="Submissions/glm_raw.csv", row.names=FALSE)
+write.csv(out2$ensemble, file="Submissions/glmnet_raw.csv", row.names=FALSE)
 ensem = makeEnsem(actual=d$y, prune=.2)
 }
 \keyword{ensemble}
